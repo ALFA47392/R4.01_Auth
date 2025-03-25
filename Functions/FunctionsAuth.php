@@ -5,6 +5,8 @@ include '../connexionBDAuth.php';
 $postedData = file_get_contents('php://input'); 
 $data = json_decode($postedData,true); //Reçoit du json et renvoi une adaptation exploitable en php. Le paramètre true impose un tableau en retour et non un objet.
 
+$secret = "Bob";
+
 function isValidUser($login, $password) {
 
     return ($login === "bob" && $password === 'BobBatman74!') || ($login === "prof" && $password === 'Karaba123');
@@ -43,32 +45,54 @@ function generate_jwt($headers, $payload, $secret) {
 }
 
 function is_jwt_valid($jwt, $secret) {
-	// split the jwt
-	$tokenParts = explode('.', $jwt);
-	//print_r($tokenParts);
-	$header = base64_decode($tokenParts[0]);
-	$payload = base64_decode($tokenParts[1]);
-	$signature_provided = $tokenParts[2];
+    // Vérifier si le JWT est bien formé
+    $tokenParts = explode('.', $jwt);
+    if (count($tokenParts) !== 3) {
+        deliver_response(400, "JWT mal formé", null);
+        return false;
+    }
 
-	// check the expiration time - note this will cause an error if there is no 'exp' claim in the jwt
-	$expiration = json_decode($payload)->exp;
-	$is_token_expired = ($expiration - time()) < 0;
+    // Décoder les parties
+    $header = base64_decode($tokenParts[0]);
+    $payload = base64_decode($tokenParts[1]);
+    $signature_provided = $tokenParts[2];
 
-	// build a signature based on the header and payload using the secret
-	$base64_url_header = base64url_encode($header);
-	$base64_url_payload = base64url_encode($payload);
-	$signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, $secret, true);
-	$base64_url_signature = base64url_encode($signature);
+    // Vérifier si le payload est valide JSON
+    $payload_decoded = json_decode($payload);
+    if (!$payload_decoded) {
+        deliver_response(400, "Erreur de décodage du payload", null);
+        return false;
+    }
 
-	// verify it matches the signature provided in the jwt
-	$is_signature_valid = ($base64_url_signature === $signature_provided);
+    // Vérifier l'expiration du token
+    if (!isset($payload_decoded->exp)) {
+        deliver_response(400, "Le champ 'exp' est manquant dans le JWT", null);
+        return false;
+    }
 
-	if ($is_token_expired || !$is_signature_valid) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+    $expiration = $payload_decoded->exp;
+    $is_token_expired = ($expiration - time()) < 0;
+
+    if ($is_token_expired) {
+        deliver_response(401, "JWT expiré", null);
+        return false;
+    }
+
+    // Vérifier la signature
+    $base64_url_header = base64url_encode(json_encode(json_decode($header, true))); // Reencoder proprement
+    $base64_url_payload = base64url_encode($payload);
+    $signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, $secret, true);
+    $base64_url_signature = base64url_encode($signature);
+
+    if ($base64_url_signature !== $signature_provided) {
+        deliver_response(401, "Signature JWT invalide", null);
+        return false;
+    }
+
+    // Si tout est bon
+    return true;
 }
+
 
 function base64url_encode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
@@ -108,5 +132,6 @@ function get_bearer_token() {
     }
     return null;
 }
+
 
 ?>

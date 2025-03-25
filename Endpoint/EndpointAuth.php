@@ -5,29 +5,31 @@ include '../Functions/FunctionsAuth.php';
 $http_method = $_SERVER['REQUEST_METHOD']; 
 
 switch ($http_method){ 
-    case "GET" : 
-        if (is_jwt_valid()
-
-        deliver_response(201,"La c'est GET",null);
+    case "GET": 
+        $token = get_bearer_token();
+        if ($token && is_jwt_valid($token, $secret)) {
+            deliver_response(201, "GET Fonctionne avec un JWT valide", null);
+        } else {
+            deliver_response(401, "JWT invalide ou absent", null);
+        }
     break; 
-    case "POST" : 
-        if (isValidUser($data['login'],$data['password'])){
+    case "POST": 
+        if (isValidUser($data['login'], $data['password'])) {
             $login = $data['login'];
             
-            $headers = array('alg'=>'HS256','typ'=>'JWT');
-            if ($login == "bob") {
-                $payload = array('login'=>$login, 'exp'=>(1739438125) );
-            } else {
-                $payload = array('login'=>$login, 'exp'=>(1739438263));
-            }
-
-            $jwt = generate_jwt($headers, $payload, 'secret');
-
+            $headers = array('alg' => 'HS256', 'typ' => 'JWT');
+            $expiration = time() + 1200; // Expiration dans 20 minutes
+    
+            $payload = array('login' => $login, 'exp' => $expiration);
+    
+            $jwt = generate_jwt($headers, $payload, $secret);
+    
             deliver_response(221, "POST Fonctionne", $jwt);
         } else {
             deliver_response(404, "Not Found", null);
         }
-    break;  
+    break;
+     
     
     case "PATCH" :
         deliver_response(203,"La c'est PATCH",null);
