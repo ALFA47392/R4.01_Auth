@@ -1,4 +1,5 @@
 <?php
+
 include '../connexionBDAuth.php';
 include '../Functions/FunctionsAuth.php';
 // Identification du type de méthode HTTP envoyée par le client
