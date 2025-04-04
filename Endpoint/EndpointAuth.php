@@ -1,7 +1,6 @@
 <?php
 
 // Inclusion des fichiers nécessaires à la connexion à la base de données et aux fonctions d'authentification
-include '../connexionBDAuth.php';  // Connexion à la base de données pour l'authentification
 include '../Functions/FunctionsAuth.php';  // Fonctions liées à l'authentification
 
 // Identification du type de méthode HTTP envoyée par le client
@@ -49,29 +48,9 @@ switch ($http_method) {
         }
     break;
      
-    case "PATCH":
-        // Réponse indiquant que la méthode PATCH a été reçue
-        deliver_response(203, "La c'est PATCH", null);
-    break;
-
-    case "PUT":
-        // Réponse indiquant que la méthode PUT a été reçue
-        deliver_response(204, "La c'est PUT", null);
-    break;
-
-    case "DEL":
-        // Réponse indiquant que la méthode DELETE a été reçue
-        deliver_response(205, "La c'est DELETE", null);
-    break;
-
-    case "OPTIONS":
-        // Réponse indiquant que la méthode OPTIONS a été reçue
-        deliver_response(206, "La c'est OPTIONS", null);
-    break;
-
     default:
-        // Si la méthode HTTP n'est pas autorisée, envoyer une réponse d'erreur
-        deliver_response(405, "Méthode non autorisée", null);
+    // Méthode HTTP non autorisée
+    deliver_response(405, "Méthode non autorisée", null);
     break;
 }
 ?>
